@@ -1,6 +1,6 @@
 import os, math, urllib, re
 
-from dulwich.errors import HangupException
+from dulwich.errors import HangupException, NotTagError
 from dulwich.index import commit_tree
 from dulwich.objects import Blob, Commit, Tag, Tree, parse_timezone
 from dulwich.pack import create_delta, apply_delta
@@ -553,6 +553,18 @@ class GitHandler(object):
                 raise hgutil.Abort("revision %s cannot be pushed since"
                                    " it doesn't have a ref" % ctx)
 
+            # We may have already stored annotated tags them as lightweight ones
+            # in refs/tags/*; try retrieving the tag from our repo, and take
+            # note which tags are available locally.
+            has_tags = []
+            for ref in ['refs/tags/'+r for r in tags if 'refs/tags/'+r in refs]:
+                # NotTagError was introduced in dulwich-0.5.0-4-g5ddf568
+                try:
+                    self.git.tag(refs[ref])
+                    has_tags.append(ref)
+                except (KeyError, NotTagError):
+                    pass
+
             for r in heads + tags:
                 if r in heads:
                     ref = 'refs/heads/'+r
@@ -568,6 +580,9 @@ class GitHandler(object):
                     else:
                         raise hgutil.Abort("pushing %s overwrites %s"
                                            % (ref, ctx))
+                elif ref in has_tags:
+                    # we already have the annotated tag.
+                    pass
                 else:
                     raise hgutil.Abort("%s changed on the server, please pull "
                                        "and merge before pushing" % ref)
