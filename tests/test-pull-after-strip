@@ -78,7 +78,7 @@ cd hgrepo-b
 hg strip tip 2>&1 | grep -v saving
 hg pull
 hg git-cleanup
-echo % pull works after \'hg git-cleanup\'
+echo % pull works after \'hg gcleanup\'
 hg pull
 hg log --graph
 

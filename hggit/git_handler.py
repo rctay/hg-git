@@ -166,6 +166,17 @@ class GitHandler(object):
         if os.path.exists(mapfile):
             os.remove(mapfile)
 
+    def cleanup(self):
+        # We only replace _map_hg, since save_map() writes the mapfile according
+        # to _map_hg.
+        new_hg_map = {}
+        for hgsha, gitsha in self._map_hg.items():
+            if hgsha in self.repo:
+                new_hg_map[hgsha] = gitsha
+        self._map_hg = new_hg_map
+        self.save_map()
+
+
     ## CHANGESET CONVERSION METHODS
 
     def export_git_objects(self):
@@ -519,7 +530,7 @@ class GitHandler(object):
 
         if not (repo_contains(p1) and repo_contains(p2)):
             raise hgutil.Abort(_('you appear to have run strip - '
-                                 'please run hg git-cleanup'))
+                                 'please run hg gcleanup'))
         ctx = context.memctx(self.repo, (p1, p2), text, list(files), getfilectx,
                              author, date, extra)
 
