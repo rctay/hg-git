@@ -12,6 +12,7 @@ from mercurial.i18n import _
 from mercurial.node import hex, bin, nullid
 from mercurial import context, util as hgutil
 
+from hggit import ssh
 
 class GitHandler(object):
 
@@ -820,9 +821,12 @@ class GitHandler(object):
             return string.decode('ascii', 'replace').encode('utf-8')
 
     def get_transport_and_path(self, uri):
+        if getattr(self, 'ssh_client', None) is None:
+            self.ssh_client = ssh.generate_ssh_client(self.ui)
+
         for handler, transport in (("git://", client.TCPGitClient),
-                                   ("git@", client.SSHGitClient),
-                                   ("git+ssh://", client.SSHGitClient)):
+                                   ("git@", self.ssh_client),
+                                   ("git+ssh://", self.ssh_client)):
             if uri.startswith(handler):
                 # We need to split around : or /, whatever comes first
                 hostpath = uri[len(handler):]
